@@ -24,15 +24,9 @@ var estree string
 //go:embed js/markdown.js
 var markdown string
 
-const (
-	TypeScript FormatType = "ts"
-	JSON       FormatType = "json"
-	Markdown   FormatType = "md"
-)
-
 type FormatType string
 
-type PrettierFormatOptions struct {
+type PrettierOption struct {
 	UseTabs       bool   `json:"useTabs"`
 	TabWidth      int    `json:"tabWidth"`
 	PrintWidth    int    `json:"printWidth"`
@@ -44,7 +38,7 @@ type PrettierFormatOptions struct {
 var vm *goja.Runtime
 var format goja.Callable
 
-var defaults = PrettierFormatOptions{
+var defaults = PrettierOption{
 	UseTabs:       false,
 	TabWidth:      4,
 	PrintWidth:    80,
@@ -77,13 +71,11 @@ func handlePromise(value goja.Value, code string) (string, error) {
 	return "", nil
 }
 
-func FormatTypeScript(code string, opts PrettierFormatOptions) (string, error) {
+func FormatTypeScript(code string, opts PrettierOption) (string, error) {
 	if err := mergo.Map(&opts, defaults); err != nil {
 		log.Println("mergo defaults error:", err)
 		return code, err
 	}
-
-	log.Println("opts: ", ToJsonString(opts))
 
 	value, err := format(goja.Undefined(), vm.ToValue("typescript"), vm.ToValue(code), vm.ToValue(ToJsonString(opts)))
 	if err != nil {
@@ -92,7 +84,7 @@ func FormatTypeScript(code string, opts PrettierFormatOptions) (string, error) {
 
 	return handlePromise(value, code)
 }
-func FormatJSON(code string, opts PrettierFormatOptions) (string, error) {
+func FormatJSON(code string, opts PrettierOption) (string, error) {
 	if err := mergo.Map(&opts, defaults); err != nil {
 		log.Println("mergo defaults error:", err)
 		return code, err
@@ -107,7 +99,7 @@ func FormatJSON(code string, opts PrettierFormatOptions) (string, error) {
 
 	return handlePromise(value, code)
 }
-func FormatMarkdown(code string, opts PrettierFormatOptions) (string, error) {
+func FormatMarkdown(code string, opts PrettierOption) (string, error) {
 	if err := mergo.Map(&opts, defaults); err != nil {
 		log.Println("mergo defaults error:", err)
 		return code, err
