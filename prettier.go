@@ -13,16 +13,19 @@ import (
 var standalone string
 
 //go:embed js/babel.js
-var babel string
+var babelPlugin string
 
 //go:embed js/typescript.js
-var typescript string
+var typescriptPlugin string
 
 //go:embed js/estree.js
-var estree string
+var estreePlugin string
 
 //go:embed js/markdown.js
-var markdown string
+var markdownPlugin string
+
+//go:embed js/html.js
+var htmlPlugin string
 
 type FormatType string
 
@@ -47,10 +50,10 @@ var defaults = PrettierOption{
 	Semi:          false,
 }
 
-func ToJsonString[T any](value T) string {
+func toJsonString[T any](value T) string {
 	data, err := json.Marshal(value)
 	if err != nil {
-		log.Println("ToJsonString error:", err)
+		log.Println("toJsonString error:", err)
 		return ""
 	}
 	return string(data)
@@ -77,7 +80,7 @@ func FormatTypeScript(code string, opts PrettierOption) (string, error) {
 		return code, err
 	}
 
-	value, err := format(goja.Undefined(), vm.ToValue("typescript"), vm.ToValue(code), vm.ToValue(ToJsonString(opts)))
+	value, err := format(goja.Undefined(), vm.ToValue("typescript"), vm.ToValue(code), vm.ToValue(toJsonString(opts)))
 	if err != nil {
 		return code, err
 	}
@@ -90,9 +93,9 @@ func FormatJSON(code string, opts PrettierOption) (string, error) {
 		return code, err
 	}
 
-	log.Println("opts: ", ToJsonString(opts))
+	log.Println("opts: ", toJsonString(opts))
 
-	value, err := format(goja.Undefined(), vm.ToValue("json"), vm.ToValue(code), vm.ToValue(ToJsonString(opts)))
+	value, err := format(goja.Undefined(), vm.ToValue("json"), vm.ToValue(code), vm.ToValue(toJsonString(opts)))
 	if err != nil {
 		return code, err
 	}
@@ -105,9 +108,24 @@ func FormatMarkdown(code string, opts PrettierOption) (string, error) {
 		return code, err
 	}
 
-	log.Println("opts: ", ToJsonString(opts))
+	log.Println("opts: ", toJsonString(opts))
 
-	value, err := format(goja.Undefined(), vm.ToValue("markdown"), vm.ToValue(code), vm.ToValue(ToJsonString(opts)))
+	value, err := format(goja.Undefined(), vm.ToValue("markdown"), vm.ToValue(code), vm.ToValue(toJsonString(opts)))
+	if err != nil {
+		return code, err
+	}
+
+	return handlePromise(value, code)
+}
+func FormatHTML(code string, opts PrettierOption) (string, error) {
+	if err := mergo.Map(&opts, defaults); err != nil {
+		log.Println("mergo defaults error:", err)
+		return code, err
+	}
+
+	log.Println("opts: ", toJsonString(opts))
+
+	value, err := format(goja.Undefined(), vm.ToValue("html"), vm.ToValue(code), vm.ToValue(toJsonString(opts)))
 	if err != nil {
 		return code, err
 	}
@@ -126,7 +144,7 @@ async function format(parser, code, optsJsonString) {
 
 func init() {
 	vm = goja.New()
-	_, err := vm.RunString(standalone + babel + typescript + estree + markdown + exported)
+	_, err := vm.RunString(standalone + babelPlugin + typescriptPlugin + estreePlugin + htmlPlugin + markdownPlugin + exported)
 	if err != nil {
 		log.Fatalln("prettier error:", err)
 	}
@@ -137,14 +155,4 @@ func init() {
 	} else {
 		format = ret
 	}
-
-	//err = vm.ExportTo(vm.Get("format"), &format)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//fmt.Println("=====")
-	//for k, _ := range prettier {
-	//	fmt.Println(k)
-	//}
-	//fmt.Println("=====")
 }

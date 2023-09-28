@@ -40,4 +40,8 @@ func TestPrettierFormat(t *testing.T) {
 	if ret, err := FormatMarkdown("#  1", PrettierOption{}); ret != "# 1\n" {
 		t.Error("FormatMarkdown error", ret, err)
 	}
+	// HTML
+	if ret, err := FormatHTML("<body  class='a' ></body>", PrettierOption{}); ret != "<body class=\"a\"></body>\n" {
+		t.Error("FormatHTML error", ret, err)
+	}
 }
