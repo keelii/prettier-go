@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/dop251/goja"
 	"log"
 	"time"
@@ -65,13 +64,10 @@ func handlePromise(value goja.Value, code string) (string, error) {
 	if p, ok := value.Export().(*goja.Promise); ok {
 		switch p.State() {
 		case goja.PromiseStateRejected:
-			fmt.Println("rejected")
 			return code, errors.New(p.Result().String())
 		case goja.PromiseStateFulfilled:
-			fmt.Println("fulfilled")
 			return p.Result().Export().(string), nil
 		default:
-			fmt.Println("error")
 			return code, errors.New("unexpected promise state pending")
 		}
 	}
