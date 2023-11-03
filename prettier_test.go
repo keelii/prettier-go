@@ -1,8 +1,12 @@
 package prettier_go
 
 import (
+	_ "embed"
 	"testing"
 )
+
+//go:embed js/antd.min.js
+var antd string
 
 func TestPrettierFormat(t *testing.T) {
 	// General
@@ -44,4 +48,14 @@ func TestPrettierFormat(t *testing.T) {
 	if ret, err := FormatHTML("<body  class='a' ></body>", PrettierOption{}); ret != "<body class=\"a\"></body>\n" {
 		t.Error("FormatHTML error", ret, err)
 	}
+}
+
+func TestPrettierFormat1(t *testing.T) {
+	script, err := FormatTypeScript(antd, PrettierOption{})
+	if err != nil {
+		t.Log(err)
+	} else {
+		t.Log(len(script))
+	}
+
 }

@@ -5,8 +5,10 @@ import (
 	_ "embed"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/dop251/goja"
 	"log"
+	"time"
 )
 
 //go:embed js/standalone.js
@@ -63,10 +65,13 @@ func handlePromise(value goja.Value, code string) (string, error) {
 	if p, ok := value.Export().(*goja.Promise); ok {
 		switch p.State() {
 		case goja.PromiseStateRejected:
+			fmt.Println("rejected")
 			return code, errors.New(p.Result().String())
 		case goja.PromiseStateFulfilled:
+			fmt.Println("fulfilled")
 			return p.Result().Export().(string), nil
 		default:
+			fmt.Println("error")
 			return code, errors.New("unexpected promise state pending")
 		}
 	}
@@ -74,13 +79,25 @@ func handlePromise(value goja.Value, code string) (string, error) {
 	return "", nil
 }
 
+func FormatText(ext goja.Value, code goja.Value, opts goja.Value) (goja.Value, error) {
+	time.AfterFunc(2*time.Second, func() {
+		vm.Interrupt("timeout > 2s")
+	})
+
+	value, err := format(goja.Undefined(), ext, code, opts)
+
+	if err != nil {
+		return code, err
+	}
+	return value, nil
+}
 func FormatTypeScript(code string, opts PrettierOption) (string, error) {
 	if err := mergo.Map(&opts, defaults); err != nil {
 		log.Println("mergo defaults error:", err)
 		return code, err
 	}
 
-	value, err := format(goja.Undefined(), vm.ToValue("typescript"), vm.ToValue(code), vm.ToValue(toJsonString(opts)))
+	value, err := FormatText(vm.ToValue("typescript"), vm.ToValue(code), vm.ToValue(toJsonString(opts)))
 	if err != nil {
 		return code, err
 	}
@@ -93,9 +110,7 @@ func FormatJSON(code string, opts PrettierOption) (string, error) {
 		return code, err
 	}
 
-	log.Println("opts: ", toJsonString(opts))
-
-	value, err := format(goja.Undefined(), vm.ToValue("json"), vm.ToValue(code), vm.ToValue(toJsonString(opts)))
+	value, err := FormatText(vm.ToValue("json"), vm.ToValue(code), vm.ToValue(toJsonString(opts)))
 	if err != nil {
 		return code, err
 	}
@@ -108,9 +123,7 @@ func FormatMarkdown(code string, opts PrettierOption) (string, error) {
 		return code, err
 	}
 
-	log.Println("opts: ", toJsonString(opts))
-
-	value, err := format(goja.Undefined(), vm.ToValue("markdown"), vm.ToValue(code), vm.ToValue(toJsonString(opts)))
+	value, err := FormatText(vm.ToValue("markdown"), vm.ToValue(code), vm.ToValue(toJsonString(opts)))
 	if err != nil {
 		return code, err
 	}
@@ -123,9 +136,7 @@ func FormatHTML(code string, opts PrettierOption) (string, error) {
 		return code, err
 	}
 
-	log.Println("opts: ", toJsonString(opts))
-
-	value, err := format(goja.Undefined(), vm.ToValue("html"), vm.ToValue(code), vm.ToValue(toJsonString(opts)))
+	value, err := FormatText(vm.ToValue("html"), vm.ToValue(code), vm.ToValue(toJsonString(opts)))
 	if err != nil {
 		return code, err
 	}
